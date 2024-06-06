@@ -336,16 +336,131 @@ int main()
 
         switch (pilihan)
         {
-            // Cases 1 to 6 remain the same
-            // Case 7: Load portofolio dari file
-            case '7':
-            {
-                portfolio.loadPortfolioFromFile("portfolio.csv");
-                cout << "Portofolio berhasil dimuat dari file." << endl;
-                cout << "-----------------------------------------------------------" << endl;
-                break;
+        case '1':
+        {
+            int id;
+            string nama, kategori, ticker;
+            double harga;
+            int kuantitas;
+
+            cout << "Masukkan ID: ";
+            while (!getIntInput(id));
+
+            cout << "Masukkan nama aset: ";
+            cin.ignore();
+            getline(cin, nama);
+
+            cout << "Masukkan kategori aset: ";
+            getline(cin, kategori);
+
+            cout << "Masukkan harga aset: $ ";
+            while (!getDoubleInput(harga));
+
+            cout << "Masukkan kuantitas aset: ";
+            while (!getIntInput(kuantitas));
+
+            if (kategori == "saham") {
+                cout << "Masukkan ticker saham: ";
+                getline(cin, ticker);
+                Saham *saham = new Saham(id, nama, kategori, harga, kuantitas, ticker);
+                portfolio.tambahAsset(saham);
+            } else {
+                Asset *asset = new Asset(id, nama, kategori, harga, kuantitas);
+                portfolio.tambahAsset(asset);
             }
-            // Case Q remains the same
+            break;
+        }
+
+        case '2':
+        {
+            int id;
+            cout << "Masukkan ID aset: ";
+            while (!getIntInput(id));
+            portfolio.hapusAsset(id);
+            break;
+        }
+
+        case '3':
+        {
+            int id;
+            cout << "Masukkan ID aset: ";
+            while (!getIntInput(id));
+            Asset *asset = portfolio.cariAsset(id);
+            if (asset)
+            {
+                cout << "Nama: " << asset->getNama() << endl;
+                cout << "Kategori: " << asset->getKategori() << endl;
+                cout << "Harga: $ " << asset->getHarga() << endl;
+                cout << "Kuantitas: " << asset->getKuantitas() << endl;
+                cout << "Nilai Total: $ " << asset->getNilaiTotal() << endl;
+                cout << "-----------------------------------------------------------" << endl;
+            }
+            else
+            {
+                cout << "Aset tidak ditemukan." << endl;
+                cout << "-----------------------------------------------------------" << endl;
+            }
+            break;
+        }
+
+        case '4':
+        {
+            int id;
+            string nama, kategori;
+            double harga;
+            int kuantitas;
+
+            cout << "Masukkan ID aset: ";
+            while (!getIntInput(id));
+
+            cout << "Masukkan nama aset baru: ";
+            cin.ignore();
+            getline(cin, nama);
+
+            cout << "Masukkan kategori aset baru: ";
+            getline(cin, kategori);
+
+            cout << "Masukkan harga aset baru: $ ";
+            while (!getDoubleInput(harga));
+
+            cout << "Masukkan kuantitas aset baru: ";
+            while (!getIntInput(kuantitas));
+
+            portfolio.perbaruiAsset(id, nama, kategori, harga, kuantitas);
+            cout << "Aset berhasil diperbarui." << endl;
+            cout << "-----------------------------------------------------------" << endl;
+            break;
+        }
+
+        case '5':
+        {
+            portfolio.cetakAsset();
+            break;
+        }
+        case '6':
+        {
+            portfolio.simpanPortofolioKeFile("portfolio.csv");
+            cout << "Portofolio berhasil disimpan ke file." << endl;
+            cout << "-----------------------------------------------------------" << endl;
+            break;
+        }
+        case '7':
+        {
+            portfolio.loadPortfolioFromFile("portfolio.csv");
+            cout << "Portofolio berhasil dimuat dari file." << endl;
+            cout << "-----------------------------------------------------------" << endl;
+            break;
+            }
+        case 'q':
+        case 'Q':
+            cout << "Terima kasih, sampai jumpa!" << endl;
+            cout << "-----------------------------------------------------------" << endl;
+            return 0;
+
+        default:
+            cout << "Pilihan tidak valid. Silakan coba lagi." << endl;
+            cout << "-----------------------------------------------------------" << endl;
+         break;
         }
     } while (true);
 
