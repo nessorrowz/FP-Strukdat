@@ -453,7 +453,7 @@ int main()
             }
         case 'q':
         case 'Q':
-            cout << "Terima kasih, sampai jumpa!" << endl;
+            cout << "Terima kasih, sampai jumpa, semoga bebas dari perbudakan fiat!" << endl;
             cout << "-----------------------------------------------------------" << endl;
             return 0;
 
