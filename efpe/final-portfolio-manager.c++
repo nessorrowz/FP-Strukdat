@@ -1,8 +1,4 @@
-#include <iostream>
-#include <vector>
-#include <string>
-#include <sstream>
-#include <fstream>
+#include <bits/stdc++.h>
 using namespace std;
 
 // Class & Object: Definisi kelas Asset yang merepresentasikan sebuah aset dalam portofolio
