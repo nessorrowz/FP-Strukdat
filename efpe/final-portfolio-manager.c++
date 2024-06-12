@@ -81,21 +81,15 @@ public:
     }
 };
 
-// Inheritance: Definisi kelas turunan dari Asset
-class Saham : public Asset
+// Class GabunganSahamCrypto yang merupakan turunan dari kelas Asset
+class GabunganSahamCrypto : public Asset
 {
 private:
     string ticker;
 
 public:
-    Saham(int id, string nama, string kategori, double harga, int kuantitas, string ticker)
+    GabunganSahamCrypto(int id, string nama, string kategori, double harga, int kuantitas, string ticker)
         : Asset(id, nama, kategori, harga, kuantitas), ticker(ticker) {}
-
-    // Overriding: Menimpa metode getNilaiTotal untuk menambahkan logika spesifik saham
-    double getNilaiTotal() const override
-    {
-        return getHarga() * getKuantitas(); // Contoh sederhana; bisa termasuk logika lebih kompleks
-    }
 
     string getTicker() const
     {
@@ -105,6 +99,12 @@ public:
     void setTicker(string ticker)
     {
         this->ticker = ticker;
+    }
+
+    // Override metode getNilaiTotal dari kelas Asset
+    double getNilaiTotal() const override
+    {
+        return Asset::getNilaiTotal();
     }
 };
 
@@ -172,45 +172,82 @@ public:
         return nullptr;
     }
 
-    void perbaruiAsset(int id, string nama, string kategori, double harga, int kuantitas)
+    void perbaruiAsset(int id, string nama, string kategori, double harga, int kuantitas, string ticker)
+{
+    bool ditemukan = false;
+    for (auto i = assets.begin(); i != assets.end(); i++)
     {
-        bool ditemukan = false;
-        for (auto i = assets.begin(); i != assets.end(); i++)
+        if ((*i)->getId() == id)
         {
-            if ((*i)->getId() == id)
+            // Jika kategori baru adalah "saham" atau "crypto", dan aset yang sedang diperbarui bukan GabunganSahamCrypto
+            if ((kategori == "saham" || kategori == "crypto") && typeid(**i) != typeid(GabunganSahamCrypto))
+            {
+                // Hapus aset yang lama dari memori
+                delete *i;
+                // Buat aset baru dengan GabunganSahamCrypto
+                *i = new GabunganSahamCrypto(id, nama, kategori, harga, kuantitas, ticker);
+            }
+            else if ((kategori != "saham" && kategori != "crypto") && typeid(**i) == typeid(GabunganSahamCrypto))
+            {
+                // Jika kategori baru bukan "saham" atau "crypto", dan aset yang sedang diperbarui adalah GabunganSahamCrypto
+                // Hapus aset yang lama dari memori
+                delete *i;
+                // Buat aset baru tanpa menggunakan GabunganSahamCrypto
+                *i = new Asset(id, nama, kategori, harga, kuantitas);
+            }
+            else // Jika kategori baru tidak "saham" atau "crypto", atau aset yang diperbarui sudah GabunganSahamCrypto
             {
                 (*i)->setNama(nama);
                 (*i)->setKategori(kategori);
                 (*i)->setHarga(harga);
                 (*i)->setKuantitas(kuantitas);
-                ditemukan = true;
-                break;
+
+                // Jika aset yang ingin diperbarui adalah GabunganSahamCrypto, perbarui juga ticker
+                GabunganSahamCrypto* gabunganAsset = dynamic_cast<GabunganSahamCrypto*>(*i);
+                if (gabunganAsset != nullptr)
+                {
+                    gabunganAsset->setTicker(ticker);
+                }
             }
-        }
-        if (!ditemukan)
-        {
-            cout << "ID tidak ada." << endl;
+
+            ditemukan = true;
+            break;
         }
     }
+    if (!ditemukan)
+    {
+        cout << "ID tidak ada." << endl;
+    }
+}
+
 
     void cetakAsset() const
+{
+    double totalNilaiPortofolio = 0.0;
+    for (auto i = assets.begin(); i != assets.end(); i++)
     {
-        double totalNilaiPortofolio = 0.0;
-        for (auto i = assets.begin(); i != assets.end(); i++)
+        cout << "ID : " << (*i)->getId() << endl;
+        cout << "Nama : " << (*i)->getNama() << endl;
+        cout << "Kategori : " << (*i)->getKategori() << endl;
+        cout << "Harga : $ " << (*i)->getHarga() << endl;
+        cout << "Kuantitas : " << (*i)->getKuantitas() << endl;
+        double nilaiTotal = (*i)->getNilaiTotal();
+        cout << "Nilai Total : $ " << nilaiTotal << endl;
+        
+        // Cek apakah aset adalah GabunganSahamCrypto
+        GabunganSahamCrypto *gabunganAsset = dynamic_cast<GabunganSahamCrypto *>(*i);
+        if (gabunganAsset != nullptr)
         {
-            cout << "ID : " << (*i)->getId() << endl;
-            cout << "Nama : " << (*i)->getNama() << endl;
-            cout << "Kategori : " << (*i)->getKategori() << endl;
-            cout << "Harga : $ " << (*i)->getHarga() << endl;
-            cout << "Kuantitas : " << (*i)->getKuantitas() << endl;
-            double nilaiTotal = (*i)->getNilaiTotal();
-            cout << "Nilai Total : $ " << nilaiTotal << endl;
-            cout << "-----------------------------------------------------------" << endl;
-            totalNilaiPortofolio += nilaiTotal;
+            cout << "Ticker : " << gabunganAsset->getTicker() << endl;
         }
-        cout << "Nilai Portofolio: $ " << totalNilaiPortofolio << endl;
+        
         cout << "-----------------------------------------------------------" << endl;
+        totalNilaiPortofolio += nilaiTotal;
     }
+    cout << "Nilai Portofolio: $ " << totalNilaiPortofolio << endl;
+    cout << "-----------------------------------------------------------" << endl;
+}
+
 
     void simpanPortofolioKeFile(const string& filename)
     {
@@ -218,7 +255,14 @@ public:
         for (int i = 0; i < assets.size(); i++)
         {
             Asset *p = assets[i];
-            file << p->getId() << "," << p->getNama() << "," << p->getKategori() << "," << p->getHarga() << "," << p->getKuantitas() << endl;
+            if (GabunganSahamCrypto* gabunganAsset = dynamic_cast<GabunganSahamCrypto*>(p))
+            {
+                file << p->getId() << "," << p->getNama() << "," << p->getKategori() << "," << p->getHarga() << "," << p->getKuantitas() << "," << gabunganAsset->getTicker() << endl;
+            }
+            else
+            {
+                file << p->getId() << "," << p->getNama() << "," << p->getKategori() << "," << p->getHarga() << "," << p->getKuantitas() << endl;
+            }
         }
         file.close();
     }
@@ -238,7 +282,7 @@ public:
         while (getline(file, line))
         {
             stringstream ss(line);
-            string idStr, name, category, priceStr, quantityStr;
+            string idStr, name, category, priceStr, quantityStr, ticker;
             getline(ss, idStr, ',');
             getline(ss, name, ',');
             getline(ss, category, ',');
@@ -249,12 +293,9 @@ public:
             double price = stod(priceStr);
             int quantity = stoi(quantityStr);
 
-            // Determine asset type based on category (assuming saham for 'saham', else regular asset)
-            if (category == "saham")
+            if (getline(ss, ticker, ','))
             {
-                string ticker;
-                getline(ss, ticker, ',');
-                assets.push_back(new Saham(id, name, category, price, quantity, ticker));
+                assets.push_back(new GabunganSahamCrypto(id, name, category, price, quantity, ticker));
             }
             else
             {
@@ -355,12 +396,18 @@ int main()
             cout << "Masukkan kuantitas aset: ";
             while (!getIntInput(kuantitas));
 
-            if (kategori == "saham") {
-                cout << "Masukkan ticker saham: ";
+            transform(kategori.begin(), kategori.end(), kategori.begin(), ::tolower);
+
+            if (kategori == "saham" || kategori == "crypto")
+            {
+                cout << "Masukkan ticker aset: ";
+                cin.ignore();
                 getline(cin, ticker);
-                Saham *saham = new Saham(id, nama, kategori, harga, kuantitas, ticker);
-                portfolio.tambahAsset(saham);
-            } else {
+                Asset *asset = new GabunganSahamCrypto(id, nama, kategori, harga, kuantitas, ticker);
+                portfolio.tambahAsset(asset);
+            }
+            else
+            {
                 Asset *asset = new Asset(id, nama, kategori, harga, kuantitas);
                 portfolio.tambahAsset(asset);
             }
@@ -389,6 +436,12 @@ int main()
                 cout << "Harga: $ " << asset->getHarga() << endl;
                 cout << "Kuantitas: " << asset->getKuantitas() << endl;
                 cout << "Nilai Total: $ " << asset->getNilaiTotal() << endl;
+
+                if (GabunganSahamCrypto* gabunganAsset = dynamic_cast<GabunganSahamCrypto*>(asset))
+                {
+                    cout << "Ticker: " << gabunganAsset->getTicker() << endl;
+                }
+
                 cout << "-----------------------------------------------------------" << endl;
             }
             else
@@ -400,65 +453,82 @@ int main()
         }
 
         case '4':
-        {
-            int id;
-            string nama, kategori;
-            double harga;
-            int kuantitas;
+{
+    // Pilih opsi perbarui aset
+    // Tambahkan logika perbarui aset
+    int id;
+    string nama, kategori, ticker;
+    double harga;
+    int kuantitas;
 
-            cout << "Masukkan ID aset: ";
-            while (!getIntInput(id));
+    cout << "Masukkan ID aset: ";
+    cin >> id;
 
-            cout << "Masukkan nama aset baru: ";
-            cin.ignore();
-            getline(cin, nama);
+    cout << "Masukkan nama aset baru: ";
+    cin.ignore();
+    getline(cin, nama);
 
-            cout << "Masukkan kategori aset baru: ";
-            getline(cin, kategori);
+    cout << "Masukkan kategori aset baru: ";
+    getline(cin, kategori);
 
-            cout << "Masukkan harga aset baru: $ ";
-            while (!getDoubleInput(harga));
+    cout << "Masukkan harga aset baru: $ ";
+    cin >> harga;
 
-            cout << "Masukkan kuantitas aset baru: ";
-            while (!getIntInput(kuantitas));
+    cout << "Masukkan kuantitas aset baru: ";
+    cin >> kuantitas;
 
-            portfolio.perbaruiAsset(id, nama, kategori, harga, kuantitas);
-            cout << "Aset berhasil diperbarui." << endl;
-            cout << "-----------------------------------------------------------" << endl;
-            break;
-        }
+    // Mengubah kategori menjadi lowercase
+    transform(kategori.begin(), kategori.end(), kategori.begin(), ::tolower);
+
+    if (kategori == "saham" || kategori == "crypto")
+    {
+        cout << "Masukkan ticker baru (opsional): ";
+        cin.ignore();
+        getline(cin, ticker);
+    }
+
+    // Memanggil fungsi perbaruiAsset yang telah diperbarui
+    portfolio.perbaruiAsset(id, nama, kategori, harga, kuantitas, ticker);
+    cout << "Aset berhasil diperbarui." << endl;
+    cout << "-----------------------------------------------------------" << endl;
+    break;
+}
+
+
 
         case '5':
-        {
             portfolio.cetakAsset();
             break;
-        }
+
         case '6':
         {
-            portfolio.simpanPortofolioKeFile("portfolio.csv");
-            cout << "Portofolio berhasil disimpan ke file." << endl;
-            cout << "-----------------------------------------------------------" << endl;
+            string filename;
+            cout << "Masukkan nama file untuk menyimpan portofolio: ";
+            cin.ignore();
+            getline(cin, filename);
+            portfolio.simpanPortofolioKeFile(filename);
             break;
         }
+
         case '7':
         {
-            portfolio.loadPortfolioFromFile("portfolio.csv");
-            cout << "Portofolio berhasil dimuat dari file." << endl;
-            cout << "-----------------------------------------------------------" << endl;
+            string filename;
+            cout << "Masukkan nama file untuk load portofolio: ";
+            cin.ignore();
+            getline(cin, filename);
+            portfolio.loadPortfolioFromFile(filename);
             break;
-            }
-        case 'q':
+        }
+
         case 'Q':
+        case 'q':
             cout << "Terima kasih, sampai jumpa, semoga bebas dari perbudakan fiat!" << endl;
-            cout << "-----------------------------------------------------------" << endl;
-            return 0;
+            break;
 
         default:
             cout << "Pilihan tidak valid. Silakan coba lagi." << endl;
-            cout << "-----------------------------------------------------------" << endl;
-         break;
         }
-    } while (true);
+    } while (pilihan != 'Q' && pilihan != 'q');
 
     return 0;
 }
